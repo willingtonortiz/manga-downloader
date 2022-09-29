@@ -37,24 +37,29 @@ def add_zeroes(number):
 
 # (page, 3) -> page-003
 # (chapter, 3) -> chapter-003
-def append_page(text, page):
+def append_number(text, page):
     return f"{text}-{add_zeroes(page)}"
 
 
-def get_page_name(page_name, page):
-    return append_page(page_name, page)
+def get_chapter_name(number):
+    return append_number('chapter', number)
 
 
-def get_chapter_name(chapter_name, page):
-    return append_page(chapter_name, page)
+def get_page_name(page):
+    return append_number('page', page)
 
 
-def get_image_name2(chapter_page, image_base, page):
-    return append_page(f'{image_base}-', page) + '.jpg'
+# chapter_name -> TokyoGhoul; page_name ->
+def get_image_name(chapter_number, page):
+    return f"{get_chapter_name(chapter_number)}_{get_page_name(page)}"
 
 
-def get_image_name(image_base, page):
-    return append_page(f'{image_base}-', page) + '.jpg'
+def get_image_path(anime_name, chapter_number, page_number):
+    return base_image_path.format(
+        anime_name,
+        get_chapter_name(chapter_number),
+        get_image_name(chapter_number, page_number)
+    )
 
 
 def download_image_in_path(url, path):
@@ -84,7 +89,15 @@ def generate_chapter_pdf():
     pdf.output('./tokyo_ghoul_86.pdf', 'F')
 
 
-def download_all_chapter(anime_id):
+def create_chapter_folder(anime_name, chapter_number):
+    image_folder = base_image_folder.format(
+        anime_name, get_chapter_name(chapter_number)
+    )
+    if not os.path.isdir(image_folder):
+        os.makedirs(image_folder)
+
+
+def download_all_chapters(anime_id):
     opener = urllib.request.build_opener()
     opener.addheaders = [('Referer', referer_header)]
     urllib.request.install_opener(opener)
@@ -106,11 +119,7 @@ def download_all_chapter(anime_id):
         pages_half = len(pages) // 2
         pages = pages[:pages_half]
 
-        image_folder = base_image_folder.format(
-            anime_name, f'chapter-{chapter_number}'
-        )
-        if not os.path.isdir(image_folder):
-            os.makedirs(image_folder)
+        create_chapter_folder(anime_name, chapter_number)
 
         for index, option in enumerate(pages):
             page_number = index + 1
@@ -118,15 +127,11 @@ def download_all_chapter(anime_id):
             image_url = base_image_url.format(
                 anime_name, chapter_number, page_number, page_id
             )
-            download_image_in_path(
-                image_url,
-                base_image_path.format(
-                    anime_name,
-                    f'chapter-{chapter_number}',
-                    f'chapter-{chapter_number}_page-{page_number}'
-                )
+            image_path = get_image_path(
+                anime_name, chapter_number, page_number
             )
-            print(f'Chapter {chapter_number} - Image {page_number} downloaded')
+            download_image_in_path(image_url, image_path)
+            print(f'{image_path} downloaded')
         print(f'Chapter {chapter_number} downloaded')
 
 
@@ -159,10 +164,11 @@ def generate_anime_pdfs(directory_path):
 
 def main():
     # tokyo_ghoul_id = "5b2d24eb-5de6-4fc7-a56a-fc6dd6510b7c"
-    # download_all_chapter(tokyo_ghoul_id)
+    kaguya_sama_id = "030de05e-ef8f-4cfe-a349-89b4599f6bf5"
+    download_all_chapters(kaguya_sama_id)
 
-    anime_directory_path = "./images/Tokyo-Ghoul"
-    generate_anime_pdfs(anime_directory_path)
+    # anime_directory_path = "./images/Tokyo-Ghoul"
+    # generate_anime_pdfs(anime_directory_path)
 
 
 if __name__ == "__main__":
